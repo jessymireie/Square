@@ -36,7 +36,29 @@ buildList(NumberColumn, NumberRow, List, Result) :-
     NewNumber is NumberRow - 1,
     buildList(NumberColumn, NewNumber, List, NewList),
     append(NewList, [RowResult], Result).
+    
+get_column_one(1, NumberColumn, Matrix, List) :- 
+    nth1(1, Matrix, Row),
+    element(NumberColumn, Row, Elem),
+    append([], [Elem], List).
+get_column_one(NumberRow, NumberColumn, Matrix, List) :-
+    NewNumberRow is NumberRow - 1,
+    get_column(NewNumberRow, NumberColumn, Matrix, NewList),
+    nth1(NumberRow, Matrix, Row),
+    element(NumberColumn, Row, Elem),
+    append(NewList, [Elem], List). 
 
+% NumberRowFinish has to be smaller
+get_column_generic(NumberRowFinish, NumberRowFinish, NumberColumn, Matrix, List) :- 
+    nth1(1, Matrix, Row),
+    element(NumberColumn, Row, Elem),
+    append([], [Elem], List).
+get_column_generic(NumberRowStart, NumberRowFinish, NumberColumn, Matrix, List) :-
+    NewNumberRow is NumberRowStart - 1,
+    get_column_generic(NewNumberRow, NumberRowFinish, NumberColumn, Matrix, NewList),
+    nth1(NumberRow, Matrix, Row),
+    element(NumberColumn, Row, Elem),
+    append(NewList, [Elem], List). 
 % ---------------------------------------------------------------
 
 
@@ -56,12 +78,7 @@ build_list(List) :-
     ].
 
 
-get_element(Matrix, Row, Column, Element) :-
-    nth1(Row, Matrix, ResultRow),
-    element(Column, ResultRow, Element).
-append_element(Matrix, Row, Column, Element, List, ResultList) :-
-    get_element(Matrix, Row, Column, Element),
-    append(List, [Element], ResultList).
+
 
 get_row_aux(MatrixRow, RowNumber, StartColumn, EndColumn, Row) :- %um dos casos base, se a ultima coluna passar do limite da matrix entao não dá append
     write(RowNumber), nl,
@@ -97,17 +114,85 @@ get_row(Matrix, [StartRow, StartColumn]-[StartRow, EndColumn], Row) :-
     nth1(StartRow, Matrix, RowList),
     get_row_aux(RowList, StartRow, StartColumn, EndColumn, Row).
 
+
+
+
+get_column_aux(MatrixColumn, ColumnNumber, StartRow, EndRow, Column) :- %um dos casos base, se a ultima coluna passar do limite da matrix entao não dá append
+    write(ColumnNumber), write('-'), write(StartRow), nl,
+    write(Column), nl,
+    length(MatrixColumn, Length),
+    EndRow > Length.
+get_column_aux(MatrixColumn, ColumnNumber, StartRow, EndRow, Column) :- %um dos casos base
+    write(ColumnNumber), write('-'), write(StartRow), nl,
+    write(Column), nl,
+    StartRow == EndRow,
+    element(StartRow, MatrixColumn, Element),
+    append([], [Element], Column),
+    write('Column: '), write(Column).
+get_column_aux(MatrixColumn, ColumnNumber, StartRow, EndRow, Column) :-
+    write(ColumnNumber), write('-'), write(StartRow), nl,
+    write(Column), nl,
+    StartRow > 0,
+    NewStartRow is StartRow + 1,
+    get_column_aux(MatrixColumn, ColumnNumber, NewStartRow, EndRow, NewColumn),
+    element(StartRow, MatrixColumn, Element),
+    append(NewColumn, [Element], Column),
+    write('Column: '), write(Column).
+get_column_aux(MatrixColumn, ColumnNumber, StartRow, EndRow, Column) :- %Se a start Row estiver colada a uma parede
+    write(ColumnNumber), write('-'), write(StartRow), nl,
+    write(Column), nl,
+    CurrentStartRow is StartRow + 1,
+    NewStartRow is CurrentStartRow + 1,
+    get_column_aux(MatrixColumn, ColumnNumber, NewStartRow, EndRow, NewColumn),
+    element(StartRow, MatrixColumn, Element),
+    append(NewColumn, [Element], Column),
+    write('Column: '), write(Column).
+
+get_column(Matrix, [StartRow, 0]-[StartRow, 0], []).
+get_column(Matrix, [StartRow, StartColumn]-[EndRow, StartColumn], []) :-
+    length(Matrix, LengthNumber),
+    StartColumn > LengthNumber.
+get_column(Matrix, [StartRow, StartColumn]-[EndRow, StartColumn], Column) :-
+    StartColumn > 0,
+    get_column_generic(EndRow, StartRow, StartColumn, Matrix, ColumnList),
+    %nth1(StartRow, Matrix, RowList).
+    get_column_aux(ColumnList, StartColumn, StartRow, EndRow, Column).
+
+
+
+apply_column_restrictions(NumberRow, 1, Matrix, ColumnR) :-
+    element(1, ColumnR, Elem),
+    get_column_one(NumberRow, 1, Matrix, ResultColumn),
+    sum(ResultColumn, #=, Elem).
+    
+apply_column_restrictions(NumberRow, NumberColumn, Matrix, ColumnR) :-
+    NewNumberColumn is NumberColumn - 1,
+    apply_column_restrictions(NumberRow, NewNumberColumn, Matrix, ColumnR),
+    element(NumberColumn, ColumnR, Elem),
+    get_column_one(NumberRow, NumberColumn, Matrix, ResultColumn),
+    sum(ResultColumn, #=, Elem).
+
+
+
+
+
+
 start_test :-
 
     %build_list(List),
+    %notrace,
     buildList(3, 3, [], List),
     %test(List, Result),
-    trace,
-    get_row(List, [1,1]-[1,3], RowResult),
+    %trace,
+    %get_row(List, [1,1]-[1,3], RowResult),
+    %trace,
+    get_column(List, [1,1]-[3,1], ColumnResult),
     nl, nl,
-    write(RowResult),
+    %write(RowResult),
+    write(ColumnResult),
 
-    labeling([], RowResult),
+    %labeling([], RowResult),
+    labeling([], ColumnResult),
 
     nl, nl,
-    write(RowResult).
+    write(ColumnResult).

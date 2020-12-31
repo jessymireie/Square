@@ -31,7 +31,9 @@ square :-
     %Restrictions
     apply_row_restrictions(Number, Result, RowR),
     apply_column_restrictions(Number, Number, Result, ColumnR),
-    apply_square_restrictions(Result),
+    %apply_square_restrictions(Result),
+
+    disjoint2(SquareList, [wrap(1, Number, 1, Number)]),
 
     labeling_all(Number, Result),
 
@@ -65,22 +67,21 @@ apply_row_restrictions(Number, Result, RowR) :-
 
 apply_column_restrictions(NumberRow, 1, Matrix, ColumnR) :-
     element(1, ColumnR, Elem),
-    get_column(NumberRow, 1, Matrix, ResultColumn),
+    get_column_one(NumberRow, 1, Matrix, ResultColumn),
     sum(ResultColumn, #=, Elem).
     
 apply_column_restrictions(NumberRow, NumberColumn, Matrix, ColumnR) :-
     NewNumberColumn is NumberColumn - 1,
     apply_column_restrictions(NumberRow, NewNumberColumn, Matrix, ColumnR),
     element(NumberColumn, ColumnR, Elem),
-    get_column(NumberRow, NumberColumn, Matrix, ResultColumn),
+    get_column_one(NumberRow, NumberColumn, Matrix, ResultColumn),
     sum(ResultColumn, #=, Elem).
 
 
-
+/*
 build_index_lists([H | _] , Result) :-
-
-
 build_index_lists(List, Result) :-
+*/
 
 
 get_extremes(List, ElemStart-ElemEnd) :- %List - Lista de listas com os indices adjacentes
@@ -90,48 +91,119 @@ get_extremes(List, ElemStart-ElemEnd) :- %List - Lista de listas com os indices 
 
 
 
-get_row_aux(Matrix, StartColumn, EndColumn, Row) :- %um dos casos base
+get_row_aux(MatrixRow, RowNumber, StartColumn, EndColumn, Row) :- %um dos casos base, se a ultima coluna passar do limite da matrix entao não dá append
+    write(RowNumber), nl,
+    length(MatrixRow, Length),
+    EndColumn > Length.
+get_row_aux(MatrixRow, RowNumber, StartColumn, EndColumn, Row) :- %um dos casos base
+    write(RowNumber), nl,
     StartColumn == EndColumn,
-    append([], [StartColumn], Row).
-get_row_aux(Matrix, StartColumn, EndColumn, Row) :-
+    element(StartColumn, MatrixRow, Element),
+    append([], [Element], Row).
+get_row_aux(MatrixRow, RowNumber, StartColumn, EndColumn, Row) :-
+    write(RowNumber), nl,
     StartColumn > 0,
     NewStartColumn is StartColumn + 1,
-    get_row_aux(Matrix, NewStartColumn, EndColumn, NewRow),
-    append(NewRow, [StartColumn], Row).
-get_row_aux(Matrix, StartColumn, EndColumn, Row) :- %Se a start column estiver colada a uma parede
-    CurrentStartColumn is StartRow + 1,
+    get_row_aux(MatrixRow, RowNumber, NewStartColumn, EndColumn, NewRow),
+    element(StartColumn, MatrixRow, Element),
+    append(NewRow, [Element], Row).
+get_row_aux(MatrixRow, RowNumber, StartColumn, EndColumn, Row) :- %Se a start column estiver colada a uma parede
+    write(RowNumber), nl,
+    CurrentStartColumn is StartColumn + 1,
     NewStartColumn is CurrentStartColumn + 1,
-    get_row_aux(Matrix, NewStartColumn, EndColumn, NewRow),
-    append(NewRow, [CurrentStartColumn], Row).
+    get_row_aux(MatrixRow, RowNumber, NewStartColumn, EndColumn, NewRow),
+    element(StartColumn, MatrixRow, Element),
+    append(NewRow, [Element], Row).
 
 
-
+get_row(Matrix, [0, StartColumn]-[0, EndColumn], []).
+get_row(Matrix, [StartRow, StartColumn]-[StartRow, EndColumn], []) :-
+    length(Matrix, LengthNumber),
+    StartRow > LengthNumber.
 get_row(Matrix, [StartRow, StartColumn]-[StartRow, EndColumn], Row) :-
+    StartRow > 0,
     nth1(StartRow, Matrix, RowList),
-    NewStartColumn is StartColumn - 1,
-    NewEndColumn is EndColumn + 1,
-    get_row_aux(Matrix, NewStartColumn, NewEndColumn, Row),
+    get_row_aux(RowList, StartRow, StartColumn, EndColumn, Row).
+
+
+get_column_aux(MatrixColumn, ColumnNumber, StartRow, EndRow, Column) :- %um dos casos base, se a ultima coluna passar do limite da matrix entao não dá append
+    write(ColumnNumber), write('-'), write(StartRow), nl,
+    write(Column), nl,
+    length(MatrixColumn, Length),
+    EndRow > Length.
+get_column_aux(MatrixColumn, ColumnNumber, StartRow, EndRow, Column) :- %um dos casos base
+    write(ColumnNumber), write('-'), write(StartRow), nl,
+    write(Column), nl,
+    StartRow == EndRow,
+    element(StartRow, MatrixColumn, Element),
+    append([], [Element], Column),
+    write('Column: '), write(Column).
+get_column_aux(MatrixColumn, ColumnNumber, StartRow, EndRow, Column) :-
+    write(ColumnNumber), write('-'), write(StartRow), nl,
+    write(Column), nl,
+    StartRow > 0,
+    NewStartRow is StartRow + 1,
+    get_column_aux(MatrixColumn, ColumnNumber, NewStartRow, EndRow, NewColumn),
+    element(StartRow, MatrixColumn, Element),
+    append(NewColumn, [Element], Column),
+    write('Column: '), write(Column).
+get_column_aux(MatrixColumn, ColumnNumber, StartRow, EndRow, Column) :- %Se a start Row estiver colada a uma parede
+    write(ColumnNumber), write('-'), write(StartRow), nl,
+    write(Column), nl,
+    CurrentStartRow is StartRow + 1,
+    NewStartRow is CurrentStartRow + 1,
+    get_column_aux(MatrixColumn, ColumnNumber, NewStartRow, EndRow, NewColumn),
+    element(StartRow, MatrixColumn, Element),
+    append(NewColumn, [Element], Column),
+    write('Column: '), write(Column).
+
+get_column(Matrix, [StartRow, 0]-[StartRow, 0], []).
+get_column(Matrix, [StartRow, StartColumn]-[EndRow, StartColumn], []) :-
+    length(Matrix, LengthNumber),
+    StartColumn > LengthNumber.
+get_column(Matrix, [StartRow, StartColumn]-[EndRow, StartColumn], Column) :-
+    StartColumn > 0,
+    get_column_generic(EndRow, StartRow, StartColumn, Matrix, ColumnList),
+    %nth1(StartRow, Matrix, RowList).
+    get_column_aux(ColumnList, StartColumn, StartRow, EndRow, Column).
 
 
 
 
 get_around(Matrix, [StartRow, StartColumn]-[EndRow, EndColumn], Result) :-
     UpperRow is StartRow - 1,
-    get_row(Matrix, [UpperRow, StartColumn]-[UpperRow, EndColumn], UpperRow), %get upper row
-    get_row(Matrix, [EndRow, StartColumn]-[EndRow, EndColumn], UpperRow), %get lower row
-    get_around_aux(Matrix, [StartRow, StartColumn]-[EndRow, EndColumn], Result)
-    nth1()
+    LowerRow is EndRow + 1,
+    LeftColumn is StartColumn - 1,
+    RightColumn is EndColumn + 1,
+    get_row(Matrix, [UpperRow, LeftColumn]-[UpperRow, RightColumn], UpperRowList), %get upper row
+    get_row(Matrix, [EndRow, LeftColumn]-[EndRow, RightColumn], LowerRowList), %get lower row
+    get_column(Matrix, [StartRow, LeftColumn]-[EndRow, LeftColumn], LeftColumnList), %Left column
+    get_column(Matrix, [StartRow, RightColumn]-[EndRow, RightColumn], RightColumnList), %Left column
+    %get_around_aux(Matrix, [StartRow, StartColumn]-[EndRow, EndColumn], Result)
+    append([], UpperRowList, TempList1),
+    append(TempList1, LowerRowList, TempList2),
+    append(TempList2, LeftColumnList, TempList3),
+    append(TempList3, RightColumnList, Result).
+
+
+set_around_zero([]).
+set_around_zero([H | T]) :-
+    H #= 0,
+    set_around_zero(T).
+
 
 
 get_square_around(Matrix, List, Result) :- %List - Lista de listas com os indices adjacentes
     get_extremes(List, Extremes),
-    get_around(Matrix, Extremes, Result).
+    get_around(Matrix, Extremes, Result),
+    set_around_zero(Result).
 
     
 make_empty()
 
 
 square_restrictions(Matrix, List) :-
+
     %get_square_around(Result)
     %checks_filled(Result) result é o que está À volta
     square_restrictions(Matrix, ListaComSquareEoqUEEstaAVolta).
@@ -149,15 +221,28 @@ apply_square_restrictions(Matrix):-
         %square_restrictions(Matrix, [cell])
 
 
-%--------------------------------------------------------    
+%--------------------------------------------------------   
 
-get_column(1, NumberColumn, Matrix, List) :- 
+% NumberRowFinish has to be smaller
+get_column_generic(NumberRowFinish, NumberRowFinish, NumberColumn, Matrix, List) :- 
     nth1(1, Matrix, Row),
     element(NumberColumn, Row, Elem),
     append([], [Elem], List).
-get_column(NumberRow, NumberColumn, Matrix, List) :-
+get_column_generic(NumberRowStart, NumberRowFinish, NumberColumn, Matrix, List) :-
+    NewNumberRow is NumberRowStart - 1,
+    get_column_generic(NewNumberRow, NumberRowFinish, NumberColumn, Matrix, NewList),
+    nth1(NumberRow, Matrix, Row),
+    element(NumberColumn, Row, Elem),
+    append(NewList, [Elem], List). 
+
+
+get_column_one(1, NumberColumn, Matrix, List) :- 
+    nth1(1, Matrix, Row),
+    element(NumberColumn, Row, Elem),
+    append([], [Elem], List).
+get_column_one(NumberRow, NumberColumn, Matrix, List) :-
     NewNumberRow is NumberRow - 1,
-    get_column(NewNumberRow, NumberColumn, Matrix, NewList),
+    get_column_one(NewNumberRow, NumberColumn, Matrix, NewList),
     nth1(NumberRow, Matrix, Row),
     element(NumberColumn, Row, Elem),
     append(NewList, [Elem], List).    
