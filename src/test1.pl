@@ -21,7 +21,49 @@ buildList(NumberColumn, NumberRow, List, Result) :-
     NewNumber is NumberRow - 1,
     buildList(NumberColumn, NewNumber, List, NewList),
     append(NewList, [RowResult], Result).
+
+get_column_one(1, NumberColumn, Matrix, List) :- 
+    nth1(1, Matrix, Row),
+    element(NumberColumn, Row, Elem),
+    append([], [Elem], List).
+get_column_one(NumberRow, NumberColumn, Matrix, List) :-
+    NewNumberRow is NumberRow - 1,
+    get_column_one(NewNumberRow, NumberColumn, Matrix, NewList),
+    nth1(NumberRow, Matrix, Row),
+    element(NumberColumn, Row, Elem),
+    append(NewList, [Elem], List).  
 % -----------------------------------------------
+
+
+% Working already ------------------------------------------
+apply_row_restrictions(1, Result, RowR) :-
+    element(1, RowR, Elem),
+    nth1(1, Result, ResultRow),
+    sum(ResultRow, #=, Elem).
+
+apply_row_restrictions(Number, Result, RowR) :-
+    NewNumber is Number - 1,
+    apply_row_restrictions(NewNumber, Result, RowR),
+    element(Number, RowR, Elem),
+    nth1(Number, Result, ResultRow),
+    sum(ResultRow, #=, Elem).
+
+
+apply_column_restrictions(NumberRow, 1, Matrix, ColumnR) :-
+    element(1, ColumnR, Elem),
+    get_column_one(NumberRow, 1, Matrix, ResultColumn),
+    sum(ResultColumn, #=, Elem).
+    
+apply_column_restrictions(NumberRow, NumberColumn, Matrix, ColumnR) :-
+    NewNumberColumn is NumberColumn - 1,
+    apply_column_restrictions(NumberRow, NewNumberColumn, Matrix, ColumnR),
+    element(NumberColumn, ColumnR, Elem),
+    get_column_one(NumberRow, NumberColumn, Matrix, ResultColumn),
+    sum(ResultColumn, #=, Elem).
+% --------------------------------------------------------
+
+
+
 
 fill_row(Matrix, NumberRow, NumberColumn, SquareSize, ColumnN) :-
     ColumnN > SquareSize.
@@ -41,8 +83,8 @@ fill_square(Matrix, NumberRow, NumberColumn, SquareSize, RowN) :-
     NewRowN is RowN + 1,
     fill_square(Matrix, NewNumberRow, NumberColumn, SquareSize, NewRowN).
 
-
-generate_square(Matrix, NumberRow, NumberColumn) :-
+generate_square(Matrix, NumberRow, NumberColumn, 0).
+generate_square(Matrix, NumberRow, NumberColumn, 1) :-
     length(Matrix, MatrixSize),
     SquareSize #=< MatrixSize - NumberColumn,
     length(List, SquareSize),
@@ -52,15 +94,18 @@ generate_square(Matrix, NumberRow, NumberColumn) :-
 checks_position(Matrix, 1, 1) :- %Canto superior esquerdo
     nth1(1, Matrix, ElemRow),
     element(1, ElemRow, Elem),
-    Elem #= 1 #<=> generate_square(Matrix, 1, 1).
+    Elem #= 1 #<=> B,
+    generate_square(Matrix, 1, 1, B).
+    % notrace.
 
 checks_position(Matrix, 1, NumberColumn) :- %Linha superior
     LeftNumberColumn is NumberColumn - 1,
     nth1(1, Matrix, RowElem),
     element(LeftNumberColumn, RowElem, ElemLeft),
     ElemLeft #= 0,
-    element(NumberColumn, ElemRow, Elem),
-    Elem #= 1 #<=> generate_square(Matrix, 1, NumberColumn).
+    element(NumberColumn, RowElem, Elem),
+    Elem #= 1 #<=> B,
+    generate_square(Matrix, 1, NumberColumn, B).
 
 checks_position(Matrix, NumberRow, 1) :- %Coluna à esquerda
     UpperNumberRow is NumberRow - 1,
@@ -69,7 +114,8 @@ checks_position(Matrix, NumberRow, 1) :- %Coluna à esquerda
     ElemUp #= 0,
     nth1(NumberRow, Matrix, RowElem),
     element(1, RowElem, Elem),
-    Elem #= 1 #<=> generate_square(Matrix, NumberRow, 1).
+    Elem #= 1 #<=> B,
+    generate_square(Matrix, NumberRow, 1, B).
 
 checks_position(Matrix, NumberRow, NumberColumn) :- %Restantes posições
     UpperNumberRow is NumberRow - 1,    % Checks upper row
@@ -84,10 +130,12 @@ checks_position(Matrix, NumberRow, NumberColumn) :- %Restantes posições
     element(LeftNumberColumn, RowElem, ElemLeft),
     ElemLeft #= 0,
     element(NumberColumn, RowElem, Elem),
-    Elem #= 1 #<=> generate_square(Matrix, NumberRow, 1).
+    Elem #= 1 #<=> B,
+    generate_square(Matrix, NumberRow, 1, B).
 
 
 generate_corner(Matrix, NumberRow, NumberColumn) :-
+    % trace,
     checks_position(Matrix, NumberRow, NumberColumn).
 % generate_corner(Matrix, NumberRow, NumberColumn).
 
@@ -136,12 +184,26 @@ labeling_all(Number, Matrix) :-
 
 
 
+
+
 start_test :-
 
     %build_list(List),
     %notrace,
+
+    % RowR = [2, 2, 2, 2, 3, 2, 2, 5, 3, 4],
+    % ColumnR = [4, 5, 4, 4, 0, 0, 0, 4, 3, 3],
+
+    RowR = [2, 2, 0],
+    ColumnR = [2, 2, 0],
+
     ListSize = 3,
     buildList(ListSize, ListSize, [], List),
+
+    apply_row_restrictions(ListSize, List, RowR),
+    apply_column_restrictions(ListSize, ListSize, List, ColumnR),
+
+
     %test(List, Result),
     %trace,
     %get_row(List, [1,1]-[1,3], RowResult),
