@@ -40,7 +40,12 @@ puzzle8:-
     Columns = [3, 3, 3, 0, 1],
     square(Rows,Columns).
 
-puzzle8:-
+puzzle9:-
     Rows = [1, 1, 1, 1, 1, 1],
     Columns = [1, 1, 1, 1, 1, 1],
+    square(Rows,Columns).
+
+puzzle10:-
+    Rows = [3, 4, 3, 0, 4, 4],
+    Columns = [5, 5, 3, 0, 3, 2],
     square(Rows,Columns).

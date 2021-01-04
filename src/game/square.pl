@@ -27,10 +27,10 @@ square(Rows, Columns) :-
     % Labeling
     append(NewStartX, NewStartY, V),
     append(V, NewLengths, Vars), !,
-    labeling([anti_first_fail, bisect, down], Vars), 
-    %write(NewStartX), nl,
-    %write(NewStartY), nl,
-    %write(NewLengths), nl,
+    labeling([max_regret, step, down], Vars), 
+    % write('NewStartX: '), write(NewStartX), nl,
+    % write('NewStartY: '), write(NewStartY), nl,
+    % write('NewLengths: '), write(NewLengths), nl,
 
     % Converts to a 0/1 matrix
     convert(NewStartX, NewStartY, NewLengths, RowSize, Matrix), 
@@ -44,6 +44,7 @@ square(Rows, Columns) :-
 
 %--------------------------------------------------------------------
 
+% Removes symetries
 orderedSolution([_], [_]).
 orderedSolution([X1,X2|X], [Y1,Y2|Y]):-
     (X1 #= X2 #/\ Y1 #< Y2) #\/ X1 #< X2,
@@ -51,6 +52,7 @@ orderedSolution([X1,X2|X], [Y1,Y2|Y]):-
 
 
 % ----------------------- Converts Lists to Matrix ---------------------------------
+% filter_lists auxiliar function
 filter_lists_Aux(StartX, StartY, Lengths, 1, StartXFiltered, StartYFiltered, LengthsFiltered) :-
     nth1(1, Lengths, Elem),
     Elem > 0,
@@ -81,11 +83,14 @@ filter_lists_Aux(StartX, StartY, Lengths, LengthsSize, NewStartXFiltered, NewSta
     Elem == 0,
     filter_lists_Aux(StartX, StartY, Lengths, NewLengthsSize, NewStartXFiltered, NewStartYFiltered, NewLengthsFiltered).
 
+
+% Removes list elements where Length is 0 and puts them in StartXFiltered, StartYFiltered and LengthsFiltered
 filter_lists(StartX, StartY, Lengths, StartXFiltered, StartYFiltered, LengthsFiltered) :-
     length(Lengths, LengthsSize),
     filter_lists_Aux(StartX, StartY, Lengths, LengthsSize, StartXFiltered, StartYFiltered, LengthsFiltered).
 
 
+% Builds a RowSize x RowSize empty matrix
 build_matrix(RowSize, RowSize, [H | []]) :-
     length(List, RowSize),
     append([], List, H).
@@ -96,6 +101,7 @@ build_matrix(RowSize, ColumnSize, [H | T]) :-
     append([], List, H).
 
 
+% Fills row with correpondent 1s
 fill_row(StartY, 1, Max, Row) :-
     nth1(StartY, Row, Elem),
     Elem = 1.
@@ -107,6 +113,7 @@ fill_row(StartY, Size, SizeConst, Row) :-
     Elem = 1.
 
 
+% fill_matrix auxiliar function, fills matrix with correspondent 1s
 fill_aux(StartX, StartY, 1, SizeConst, Matrix) :-
     nth1(StartX, Matrix, Row),
     Max is StartY + 1,
@@ -118,7 +125,7 @@ fill_aux(StartX, StartY, Size, SizeConst, Matrix) :-
     nth1(StartX, Matrix, Row),
     fill_row(StartY, SizeConst, SizeConst, Row).
 
-
+% fills matrix with correspondent 1s
 fill_matrix(StartXFiltered, StartYFiltered, LengthsFiltered, 1, Matrix, FilledMatrix) :-
     nth1(1, StartXFiltered, StartXNumber),
     nth1(1, StartYFiltered, StartYNumber),
@@ -138,7 +145,7 @@ fill_matrix(StartXFiltered, StartYFiltered, LengthsFiltered, AuxSize, Matrix, Fi
     nth1(AuxSize, LengthsFiltered, Size),
     fill_aux(StartXNumber, StartYNumber, Size, Size, Matrix).
 
-
+% complete_matrix auxiliar function, fills leftover matrix cells with 0s
 complete_aux(Row, 1) :-
     nth1(1, Row, Elem),
     Elem \== 1,
@@ -156,6 +163,7 @@ complete_aux(Row, RowSize) :-
     NewRowSize is RowSize - 1,
     complete_aux(Row, NewRowSize).
 
+% Fills leftover matrix cells with 0s
 complete_matrix(Matrix, 1, RowSize) :-
     nth1(1, Matrix, Row), 
     complete_aux(Row, RowSize).
@@ -165,6 +173,8 @@ complete_matrix(Matrix, RowSize, ConstRowSize) :-
     nth1(RowSize, Matrix, Row), 
     complete_aux(Row, ConstRowSize).
 
+
+% Converts StartX, StartY, Lengths to a RowSize x RowSize matrix
 convert(StartX, StartY, Lengths, RowSize, Matrix) :-
     filter_lists(StartX, StartY, Lengths, StartXFiltered, StartYFiltered, LengthsFiltered),
     build_matrix(RowSize, 1, Matrix),
@@ -175,8 +185,7 @@ convert(StartX, StartY, Lengths, RowSize, Matrix) :-
 % -------------------------------------------------------------------------
 
 
-
-
+% Builds NewStartX, NewStartY, NewLength lists with corresponding restrictions and according to the Size of the Row/Column lists passed in FixedSize variable
 build_lists(Rectangles, StartX, StartY, Lengths, NewRectangles, NewStartX, NewStartY, NewLengths, 1, FixedSize) :-
     NewRectangles = [rect(Ax, L1, Ay, L1, a)], 
     NewStartX = [Ax], 
@@ -185,7 +194,6 @@ build_lists(Rectangles, StartX, StartY, Lengths, NewRectangles, NewStartX, NewSt
     Ax + L1 #=< (FixedSize+1),
     Ay + L1 #=< (FixedSize+1).
 build_lists(Rectangles, StartX, StartY, Lengths, ResultRectangles, ResultStartX, ResultStartY, ResultLengths, Size, FixedSize) :-
-    %write(Size), nl,
     NewSize is Size - 1,
     build_lists(Rectangles, StartX, StartY, Lengths, NewRectangles, NewStartX, NewStartY, NewLengths, NewSize, FixedSize),
     append(NewRectangles, [rect(Ax, L1, Ay, L1, a)], ResultRectangles),
@@ -196,6 +204,7 @@ build_lists(Rectangles, StartX, StartY, Lengths, ResultRectangles, ResultStartX,
     Ay + L1 #=< (FixedSize+1).
 
 
+% Calculates the maximum number of corners there can be in a RowSize x RowSize matrix
 get_size(RowSize, Size) :-
     Flag is RowSize mod 2,
     Flag == 0,
@@ -206,7 +215,8 @@ get_size(RowSize, Size) :-
     Size is ((RowSize + 1)//2) * ((RowSize + 1)//2).
 
 
-%line_constraints(Coordenates, Lengths, N)
+% line_constraints(CoordenateList, LengthsList, LineNumber, Constraint)
+% Enforce row and column sum according to the list they receive
 line_constraints(_, _, _, []).
 line_constraints(Coordenates, Lengths, LineNo, [LineTotal|RestTotals]):-
     check_line(Coordenates, Lengths, LineNo, Counter),
@@ -214,6 +224,7 @@ line_constraints(Coordenates, Lengths, LineNo, [LineTotal|RestTotals]):-
     Counter #= LineTotal,
     line_constraints(Coordenates, Lengths, LineNo2, RestTotals).
 
+% line_constraints auxiliar function
 check_line([], [], _, 0).
 check_line([X|RestX], [L|RestL], LineNo, Counter):-
     LineNo #>= X #/\  LineNo #< (X + L) #<=> B,
