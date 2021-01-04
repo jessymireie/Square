@@ -3,6 +3,7 @@
 :- include('display.pl').
 
 square(Rows, Columns) :-
+    displayName,nl,
     statistics(runtime, [T0|_]),
     length(Rows, RowSize),
     get_size(RowSize, Size),
@@ -25,16 +26,20 @@ square(Rows, Columns) :-
     % Labeling
     append(NewStartX, NewStartY, V),
     append(V, NewLengths, Vars),
-    labeling([], Vars), 
-    write(NewStartX), nl,
-    write(NewStartY), nl,
-    write(NewLengths), nl,
+    labeling([bisect], Vars), 
+    %write(NewStartX), nl,
+    %write(NewStartY), nl,
+    %write(NewLengths), nl,
 
     % Display
-    print_solution(NewStartX, NewStartY, NewLengths, RowSize, _), !,
+    print_solution(NewStartX, NewStartY, NewLengths, RowSize, Matrix), 
+    displayMatrix(Matrix, RowSize, 1, Rows),nl,
+    displayColumns(0,RowSize,Columns),!,nl,
     statistics(runtime, [T1|_]),
     T is T1 - T0,nl,
     format('Time: ~d ms.~n', [T]).
+
+%--------------------------------------------------------------------
 
 orderedSolution([_], [_]).
 orderedSolution([X1,X2|X], [Y1,Y2|Y]):-
@@ -157,16 +162,15 @@ complete_matrix(Matrix, RowSize, ConstRowSize) :-
     nth1(RowSize, Matrix, Row), 
     complete_aux(Row, ConstRowSize).
 
-print_solution(StartX, StartY, Lengths, RowSize, Solution) :-
+print_solution(StartX, StartY, Lengths, RowSize, Matrix) :-
     filter_lists(StartX, StartY, Lengths, StartXFiltered, StartYFiltered, LengthsFiltered),
-    write(StartXFiltered), nl,
-    write(StartYFiltered), nl,
-    write(LengthsFiltered), nl,
+    %write(StartXFiltered), nl,
+    %write(StartYFiltered), nl,
+    %write(LengthsFiltered), nl,
     build_matrix(RowSize, 1, Matrix),
     length(StartXFiltered, AuxSize),
     fill_matrix(StartXFiltered, StartYFiltered, LengthsFiltered, AuxSize, Matrix, FilledMatrix),
-    complete_matrix(Matrix, RowSize, RowSize),
-    displayMatrix(Matrix, RowSize, 1).
+    complete_matrix(Matrix, RowSize, RowSize).
 
 % -------------------------------------------------------------------------
 
