@@ -24,8 +24,8 @@ square(Rows, Columns) :-
     %Rows = [3, 3, 3, 0, 1],
     %Columns = [3, 3, 3, 0, 1],
 
-    Rows = [3, 3, 3, 0, 1],
-    Columns = [3, 3, 3, 0, 1],
+    Rows = [3, 3, 3, 0, 3, 3, 3],
+    Columns = [3, 3, 3, 0, 3, 3, 3],
 
     length(Rows, RowSize),
     get_size(RowSize, Size),
@@ -48,13 +48,14 @@ square(Rows, Columns) :-
     % Labeling
     append(NewStartX, NewStartY, V),
     append(V, NewLengths, Vars),
-    labeling([], Vars), 
+    labeling([bisect], Vars), 
     write(NewStartX), nl,
     write(NewStartY), nl,
     write(NewLengths), nl,
 
     % Display
-    print_solution(NewStartX, NewStartY, NewLengths, RowSize, _), !.
+    print_solution(NewStartX, NewStartY, NewLengths, RowSize, Matrix), 
+    displayMatrix(Matrix, RowSize, 1), !.
 
 
 orderedSolution([_], [_]).
@@ -178,7 +179,7 @@ complete_matrix(Matrix, RowSize, ConstRowSize) :-
     nth1(RowSize, Matrix, Row), 
     complete_aux(Row, ConstRowSize).
 
-print_solution(StartX, StartY, Lengths, RowSize, Solution) :-
+print_solution(StartX, StartY, Lengths, RowSize, Matrix) :-
     filter_lists(StartX, StartY, Lengths, StartXFiltered, StartYFiltered, LengthsFiltered),
     write(StartXFiltered), nl,
     write(StartYFiltered), nl,
@@ -186,8 +187,7 @@ print_solution(StartX, StartY, Lengths, RowSize, Solution) :-
     build_matrix(RowSize, 1, Matrix),
     length(StartXFiltered, AuxSize),
     fill_matrix(StartXFiltered, StartYFiltered, LengthsFiltered, AuxSize, Matrix, FilledMatrix),
-    complete_matrix(Matrix, RowSize, RowSize),
-    displayMatrix(Matrix, RowSize, 1).
+    complete_matrix(Matrix, RowSize, RowSize).
 
 % -------------------------------------------------------------------------
 
