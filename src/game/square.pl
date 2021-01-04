@@ -24,8 +24,8 @@ square(Rows, Columns) :-
     %Rows = [3, 3, 3, 0, 1],
     %Columns = [3, 3, 3, 0, 1],
 
-    Rows = [3, 3, 3, 0, 3, 3, 3],
-    Columns = [3, 3, 3, 0, 3, 3, 3],
+    Rows = [3,4,3,1,2], 
+    Columns = [4,3,4,0,2],
 
     length(Rows, RowSize),
     get_size(RowSize, Size),
@@ -53,8 +53,10 @@ square(Rows, Columns) :-
     write(NewStartY), nl,
     write(NewLengths), nl,
 
-    % Display
+    % Convert
     print_solution(NewStartX, NewStartY, NewLengths, RowSize, Matrix), 
+
+    % Display
     displayMatrix(Matrix, RowSize, 1), !.
 
 
