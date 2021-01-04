@@ -3,29 +3,8 @@
 :- include('display.pl').
 
 square(Rows, Columns) :-
-    %Rows = [1, 1, 1, 1, 1, 1, 1, 1],
-    %Columns = [1, 1, 1, 1, 1, 1, 1, 1],
-
-    %Rows = [2, 2, 2, 2, 3, 2, 2, 5, 3, 4],
-    %Columns = [4, 5, 4, 4, 0, 0, 0, 4, 3, 3],
-
-    % Rows = [2, 2, 2, 2, 3, 2, 2, 5, 3, 4],
-    % Columns = [3, 3, 4, 0, 0, 0, 4, 4, 5, 4],
-
-    %Rows = [3, 3, 3, 0],
-    %Columns = [3, 3, 3, 0],
-
-    %Rows = [1, 0, 2, 2],
-    %Columns = [1, 0, 2, 2],
-
-    % Rows = [2, 0, 0, 2],
-    % Columns = [2, 0, 0, 2],  >> Este dá erro :(
-
-    %Rows = [3, 3, 3, 0, 1],
-    %Columns = [3, 3, 3, 0, 1],
-
-    Rows = [3,4,3,1,2], 
-    Columns = [4,3,4,0,2],
+    displayName,nl,
+    statistics(runtime, [T0|_]),
 
     length(Rows, RowSize),
     get_size(RowSize, Size),
@@ -47,18 +26,23 @@ square(Rows, Columns) :-
 
     % Labeling
     append(NewStartX, NewStartY, V),
-    append(V, NewLengths, Vars),
-    labeling([bisect], Vars), 
-    write(NewStartX), nl,
-    write(NewStartY), nl,
-    write(NewLengths), nl,
+    append(V, NewLengths, Vars), !,
+    labeling([anti_first_fail, bisect, down], Vars), 
+    %write(NewStartX), nl,
+    %write(NewStartY), nl,
+    %write(NewLengths), nl,
 
-    % Convert
-    print_solution(NewStartX, NewStartY, NewLengths, RowSize, Matrix), 
+    % Converts to a 0/1 matrix
+    convert(NewStartX, NewStartY, NewLengths, RowSize, Matrix), 
 
     % Display
-    displayMatrix(Matrix, RowSize, 1), !.
+    displayMatrix(Matrix, RowSize, 1, Rows),nl,
+    displayColumns(0,RowSize,Columns),!,nl,
+    statistics(runtime, [T1|_]),
+    T is T1 - T0,nl,
+    format('Time: ~d ms.~n', [T]).
 
+%--------------------------------------------------------------------
 
 orderedSolution([_], [_]).
 orderedSolution([X1,X2|X], [Y1,Y2|Y]):-
@@ -181,11 +165,8 @@ complete_matrix(Matrix, RowSize, ConstRowSize) :-
     nth1(RowSize, Matrix, Row), 
     complete_aux(Row, ConstRowSize).
 
-print_solution(StartX, StartY, Lengths, RowSize, Matrix) :-
+convert(StartX, StartY, Lengths, RowSize, Matrix) :-
     filter_lists(StartX, StartY, Lengths, StartXFiltered, StartYFiltered, LengthsFiltered),
-    write(StartXFiltered), nl,
-    write(StartYFiltered), nl,
-    write(LengthsFiltered), nl,
     build_matrix(RowSize, 1, Matrix),
     length(StartXFiltered, AuxSize),
     fill_matrix(StartXFiltered, StartYFiltered, LengthsFiltered, AuxSize, Matrix, FilledMatrix),
@@ -204,7 +185,7 @@ build_lists(Rectangles, StartX, StartY, Lengths, NewRectangles, NewStartX, NewSt
     Ax + L1 #=< (FixedSize+1),
     Ay + L1 #=< (FixedSize+1).
 build_lists(Rectangles, StartX, StartY, Lengths, ResultRectangles, ResultStartX, ResultStartY, ResultLengths, Size, FixedSize) :-
-    write(Size), nl,
+    %write(Size), nl,
     NewSize is Size - 1,
     build_lists(Rectangles, StartX, StartY, Lengths, NewRectangles, NewStartX, NewStartY, NewLengths, NewSize, FixedSize),
     append(NewRectangles, [rect(Ax, L1, Ay, L1, a)], ResultRectangles),
