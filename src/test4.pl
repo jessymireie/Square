@@ -15,15 +15,8 @@ square(StartX, StartY, Lengths) :-
     % Rows = [2, 2, 2, 2, 3, 2, 2, 5, 3, 4],
     % Columns = [3, 3, 4, 0, 0, 0, 4, 4, 5, 4],
 
-    % Rows = [1, 1, 1, 1],
-    % Columns = [1, 1, 1, 1],
-
-    Rows = [1, 1, 1],
-    Cols = [1, 1, 1],
-
-    % [1, 3]
-    % [1, 3]
-    % [1, 2]
+    Rows = [1, 0, 0, 1],
+    Columns = [1, 0, 0, 1],
 
     % Rows = [1, 0, 2, 2],
     % Columns = [1, 0, 2, 2],
@@ -54,12 +47,10 @@ square(StartX, StartY, Lengths) :-
 
     disjoint2(NewRectangles, [margin(a,a,1,1)]),
     write('Disjoint'), nl,
-    line_constraints(NewStartX, NewStartY, NewStartY, NewLengths, NewLengths, 1, Rows, Cols),
-    %line_constraints(CoordenatesX, CoordinatesY, CoordinatesY, Lengths, Lengths, LineNo, [LineTotal|RestTotals], ColumnTotals):-
-    
+    line_constraints(NewStartX, NewLengths, 1, Rows),
     write('Rows'), nl,
-    %line_constraints(NewStartY, NewLengths, 1, Cols),
-    %write('Columns'), nl,
+    line_constraints(NewStartY, NewLengths, 1, Cols),
+    write('Columns'), nl,
 
     %apply_row_restrictions(Number, Matrix, RowR),
     %apply_column_restrictions(Number, Number, Matrix, ColumnR),
@@ -69,44 +60,60 @@ square(StartX, StartY, Lengths) :-
     append(V, NewLengths, Vars),
     write('Append'), nl,
 
-    labeling([], Vars), 
-    write(NewStartX), nl,
-    write(NewStartY), nl,
-    write(NewLengths), nl,
+    print_solution(NewStartX, NewStartY, NewLengths, RowSize, Matrix),
 
-    print_solution(NewStartX, NewStartY, NewLengths, RowSize, _).
+    flatten(Matrix, NewMatrix),
 
+    labeling([], NewMatrix), write(Matrix), nl.
 
 
-filter_lists_Aux(StartX, StartY, Lengths, 1, StartXFiltered, StartYFiltered, LengthsFiltered) :-
-    nth1(1, Lengths, Elem),
-    Elem > 0,
+
+flatten([], []).
+flatten([A|B], L) :- 
+    is_list(A),
+    flatten(B, B1), 
+    !,
+    append(A, B1, L).
+flatten([A|B], [A|B1]) :- 
+    flatten(B, B1).
+
+
+
+filter_lists_restrictions_aux(StartX, StartY, Lengths, 1, StartXFiltered, StartYFiltered, LengthsFiltered, 1) :-
     append([], [Elem], LengthsFiltered),
-    nth1(1, StartX, ElemX),
-    nth1(1, StartY, ElemY),
+    element(1, StartX, ElemX),
+    element(1, StartY, ElemY),
     append([], [ElemX], StartXFiltered),
     append([], [ElemY], StartYFiltered).
-filter_lists_Aux(StartX, StartY, Lengths, 1, StartXFiltered, StartYFiltered, LengthsFiltered) :-
-    nth1(NewLengthsSize, Lengths, Elem),
-    Elem == 0,
+filter_lists_restrictions_aux(StartX, StartY, Lengths, 1, StartXFiltered, StartYFiltered, LengthsFiltered, 0) :-
     StartXFiltered = [],
     StartYFiltered = [],
     LengthsFiltered = [].
-filter_lists_Aux(StartX, StartY, Lengths, LengthsSize, NewStartXFiltered, NewStartYFiltered, NewLengthsFiltered) :-
+filter_lists_restrictions_aux(StartX, StartY, Lengths, LengthsSize, NewStartXFiltered, NewStartYFiltered, NewLengthsFiltered, 1) :-
     NewLengthsSize is LengthsSize - 1,
-    nth1(LengthsSize, Lengths, Elem),
-    Elem > 0,
     filter_lists_Aux(StartX, StartY, Lengths, NewLengthsSize, StartXFiltered, StartYFiltered, LengthsFiltered),
+    element(LengthsSize, Lengths, Elem),
     append(LengthsFiltered, [Elem], NewLengthsFiltered),
-    nth1(LengthsSize, StartX, ElemX),
-    nth1(LengthsSize, StartY, ElemY),
+    element(LengthsSize, StartX, ElemX),
+    element(LengthsSize, StartY, ElemY),
     append(StartXFiltered, [ElemX], NewStartXFiltered),
     append(StartYFiltered, [ElemY], NewStartYFiltered).
+filter_lists_restrictions_aux(StartX, StartY, Lengths, LengthsSize, StartXFiltered, StartYFiltered, LengthsFiltered, 0) :-
+    NewLengthsSize is LengthsSize - 1,
+    element(LengthsSize, Lengths, Elem),
+    filter_lists_Aux(StartX, StartY, Lengths, NewLengthsSize, NewStartXFiltered, NewStartYFiltered, NewLengthsFiltered).
+
+
+filter_lists_Aux(StartX, StartY, Lengths, 1, StartXFiltered, StartYFiltered, LengthsFiltered) :-
+    element(1, Lengths, Elem),
+    Elem #> 0 #<=> B,
+    filter_lists_restrictions_aux(StartX, StartY, Lengths, 1, StartXFiltered, StartYFiltered, LengthsFiltered, B).
 filter_lists_Aux(StartX, StartY, Lengths, LengthsSize, NewStartXFiltered, NewStartYFiltered, NewLengthsFiltered) :-
     NewLengthsSize is LengthsSize - 1,
-    nth1(LengthsSize, Lengths, Elem),
-    Elem == 0,
-    filter_lists_Aux(StartX, StartY, Lengths, NewLengthsSize, NewStartXFiltered, NewStartYFiltered, NewLengthsFiltered).
+    element(LengthsSize, Lengths, Elem),
+    Elem #> 0 #<=> B,
+    filter_lists_restrictions_aux(StartX, StartY, Lengths, LengthsSize, StartXFiltered, StartYFiltered, LengthsFiltered, B).
+
 
 filter_lists(StartX, StartY, Lengths, StartXFiltered, StartYFiltered, LengthsFiltered) :-
     length(Lengths, LengthsSize),
@@ -115,6 +122,7 @@ filter_lists(StartX, StartY, Lengths, StartXFiltered, StartYFiltered, LengthsFil
 
 build_matrix(RowSize, RowSize, [H | []]) :-
     length(List, RowSize),
+    domain(List, 0, 1),
     append([], List, H).
 build_matrix(RowSize, ColumnSize, [H | T]) :-
     NewColumnSize is ColumnSize + 1,
@@ -124,14 +132,14 @@ build_matrix(RowSize, ColumnSize, [H | T]) :-
 
 
 fill_row(StartY, 1, Max, Row) :-
-    nth1(StartY, Row, Elem),
-    Elem = 1.
+    element(StartY, Row, Elem),
+    Elem #= 1.
 fill_row(StartY, Size, SizeConst, Row) :-
     NewStartY is StartY + 1,
     NewSize is Size - 1,
     fill_row(NewStartY, NewSize, SizeConst, Row),
-    nth1(StartY, Row, Elem),
-    Elem = 1.
+    element(StartY, Row, Elem),
+    Elem #= 1.
 
 
 fill_aux(StartX, StartY, 1, SizeConst, Matrix) :-
@@ -147,39 +155,33 @@ fill_aux(StartX, StartY, Size, SizeConst, Matrix) :-
 
 
 fill_matrix(StartXFiltered, StartYFiltered, LengthsFiltered, 1, Matrix, FilledMatrix) :-
-    nth1(1, StartXFiltered, StartXNumber),
-    nth1(1, StartYFiltered, StartYNumber),
+    element(1, StartXFiltered, StartXNumber),
+    element(1, StartYFiltered, StartYNumber),
     nth1(StartXNumber, Matrix, Row),
-    nth1(StartYNumber, Row, Elem),
-    Elem = 1,
-    nth1(1, LengthsFiltered, Size),
+    element(StartYNumber, Row, Elem),
+    Elem #= 1,
+    element(1, LengthsFiltered, Size),
     fill_aux(StartXNumber, StartYNumber, Size, Size, Matrix).
 fill_matrix(StartXFiltered, StartYFiltered, LengthsFiltered, AuxSize, Matrix, FilledMatrix) :-
     NewAuxSize is AuxSize - 1,
     fill_matrix(StartXFiltered, StartYFiltered, LengthsFiltered, NewAuxSize, Matrix, FilledMatrix),
-    nth1(AuxSize, StartXFiltered, StartXNumber),
-    nth1(AuxSize, StartYFiltered, StartYNumber),
+    element(AuxSize, StartXFiltered, StartXNumber),
+    element(AuxSize, StartYFiltered, StartYNumber),
     nth1(StartXNumber, Matrix, Row),
-    nth1(StartYNumber, Row, Elem),
-    Elem = 1,
-    nth1(AuxSize, LengthsFiltered, Size),
+    element(StartYNumber, Row, Elem),
+    Elem #= 1,
+    element(AuxSize, LengthsFiltered, Size),
     fill_aux(StartXNumber, StartYNumber, Size, Size, Matrix).
 
 
 complete_aux(Row, 1) :-
-    nth1(1, Row, Elem),
-    Elem \== 1,
-    Elem = 0.
-complete_aux(Row, 1).
+    element(1, Row, Elem),
+    Elem #= 1 #<=> B,
+    Elem #= B.
 complete_aux(Row, RowSize) :-
     nth1(RowSize, Row, Elem),
-    Elem \== 1,
-    Elem = 0,
-    NewRowSize is RowSize - 1,
-    complete_aux(Row, NewRowSize).
-complete_aux(Row, RowSize) :-
-    nth1(RowSize, Row, Elem),
-    Elem == 1,
+    Elem #= 1 #<=> B,
+    Elem #= B,
     NewRowSize is RowSize - 1,
     complete_aux(Row, NewRowSize).
 
@@ -192,7 +194,7 @@ complete_matrix(Matrix, RowSize, ConstRowSize) :-
     nth1(RowSize, Matrix, Row), 
     complete_aux(Row, ConstRowSize).
 
-print_solution(StartX, StartY, Lengths, RowSize, Solution) :-
+print_solution(StartX, StartY, Lengths, RowSize, Matrix) :-
     filter_lists(StartX, StartY, Lengths, StartXFiltered, StartYFiltered, LengthsFiltered),
     write(StartXFiltered), nl,
     write(StartYFiltered), nl,
@@ -200,8 +202,8 @@ print_solution(StartX, StartY, Lengths, RowSize, Solution) :-
     build_matrix(RowSize, 1, Matrix),
     length(StartXFiltered, AuxSize),
     fill_matrix(StartXFiltered, StartYFiltered, LengthsFiltered, AuxSize, Matrix, FilledMatrix),
-    complete_matrix(Matrix, RowSize, RowSize),
-    displayMatrix(Matrix, RowSize, 1).
+    complete_matrix(Matrix, RowSize, RowSize).
+    %displayMatrix(Matrix, RowSize, 1).
 
 
 
@@ -218,7 +220,7 @@ build_lists(Rectangles, StartX, StartY, Lengths, NewRectangles, NewStartX, NewSt
     Ax + L1 #=< (FixedSize+1),
     Ay + L1 #=< (FixedSize+1).
 build_lists(Rectangles, StartX, StartY, Lengths, ResultRectangles, ResultStartX, ResultStartY, ResultLengths, Size, FixedSize) :-
-    write('Build lists: '), write(Size), nl,
+    write(Size), nl,
     NewSize is Size - 1,
     % trace,
     build_lists(Rectangles, StartX, StartY, Lengths, NewRectangles, NewStartX, NewStartY, NewLengths, NewSize, FixedSize),
@@ -244,56 +246,35 @@ get_size(RowSize, Size) :-
 
 
 %line_constraints(Coordenates, Lengths, N)
-line_constraints(_, _, _, _, _, _, [], _).
-line_constraints(CoordenatesX, CoordinatesY, CoordinatesYCopy, Lengths, LengthsCopy, LineNo, [LineTotal|RestTotals], ColumnTotals):-
-    write('line constraints, LineNo='), write(LineNo), nl, 
-    check_line(CoordenatesX, CoordinatesY, CoordinatesY, Lengths, Lengths, LineNo, Counter, ColumnTotals),
-    LineNo2 is LineNo + 1,
-    Counter #= LineTotal,
-    line_constraints(CoordenatesX, CoordinatesY, CoordinatesY, Lengths, Lengths, LineNo2, RestTotals, ColumnTotals).
-
-check_line([], [], _, [], _, _, _, []).
-check_line([X|RestX], [Y|RestY], FullY, [L|RestL], FullL, LineNo, CounterRows, CounterColumns):-
-    write('Check line: X='), write(X), nl,
-    [CounterCol | CounterColRest] = CounterColumns, 
-    LineNo #>= X #/\  LineNo #< (X + L) #<=> B,
-    CounterRows #= Counter2 + (B*L),
-    %check_column(Y, FullY, FullL, CounterCol),
-    check_line(RestX, RestY, FullY, RestL, FullL, LineNo, Counter2, CounterColRest).
-
-
-check_column(Y, FullY, FullL, CounterCol) :-
-    aux_column(Y, FullY, FullL, Counter),
-    Counter #= CounterCol.
-
-
-aux_column(Y, [], [], Counter).
-aux_column(Y, [HFullY | TFullY], [HFullL | TFullL], Counter) :-
-    Y #= HFullY #<=> B,
-    Counter #= Counter2 + (B*HFullL),
-    aux_column(Y, TFullY, TFullL, Counter2).
-
-
-
-
-
-/*
-%line_constraints(Coordenates, Lengths, N)
-column_constraints(_, _, _, []).
-column_constraints(Coordenates, Lengths, LineNo, [LineTotal|RestTotals]):-
+line_constraints(_, _, _, []).
+line_constraints(Coordenates, Lengths, LineNo, [LineTotal|RestTotals]):-
     check_line(Coordenates, Lengths, LineNo, Counter),
     LineNo2 is LineNo + 1,
     Counter #= LineTotal,
-    column_constraints(Coordenates, Lengths, LineNo2, RestTotals).
+    line_constraints(Coordenates, Lengths, LineNo2, RestTotals).
 
 check_line([], [], _, 0).
-check_line([Y|RestY], [L|RestL], LineNo, Counter):-
-    LineNo #>= Y #/\  LineNo #<= (Y + L) #<=> B,
+check_line([X|RestX], [L|RestL], LineNo, Counter):-
+    LineNo #>= X #/\  LineNo #< (X + L) #<=> B,
     Counter #= Counter2 + (B*L),
-    check_line(RestY, RestL, LineNo, Counter2).
-    
-*/
+    check_line(RestX,RestL, LineNo, Counter2).
 
+/*
+%line_constraints(Coordenates, Lengths, N)
+line_constraints(_, _, _, []).
+line_constraints(Coordenates, Lengths, LineNo, [LineTotal|RestTotals]):-
+    check_line(Coordenates, Lengths, LineNo, Counter),
+    LineNo2 is LineNo + 1,
+    Counter #= LineTotal,
+    line_constraints(Coordenates, Lengths, LineNo2, RestTotals).
+
+check_line([], [], _, 0).
+check_line([X|RestX], [L|RestL], LineNo, Counter):-
+    LineNo #>= X #/\  LineNo #< (X + L) #<=> B,
+    Counter #= Counter2 + (B*L),
+    check_line(RestX,RestL, LineNo, Counter2).
+
+*/
 
 
 /*

@@ -3,30 +3,17 @@
 :- include('display.pl').
 
 square(StartX, StartY, Lengths) :-
-    % Rows=[2,2,0],
-    % Cols=[2,2,0],
-
-    % Rows=[1,0,0],
-    % Cols=[1,0,0],
-
     %Rows = [2, 2, 2, 2, 3, 2, 2, 5, 3, 4],
     %Columns = [4, 5, 4, 4, 0, 0, 0, 4, 3, 3],
 
     % Rows = [2, 2, 2, 2, 3, 2, 2, 5, 3, 4],
     % Columns = [3, 3, 4, 0, 0, 0, 4, 4, 5, 4],
 
-    % Rows = [1, 1, 1, 1],
-    % Columns = [1, 1, 1, 1],
+    %Rows = [3, 3, 3, 0],
+    %Columns = [3, 3, 3, 0],
 
-    Rows = [1, 1, 1],
-    Cols = [1, 1, 1],
-
-    % [1, 3]
-    % [1, 3]
-    % [1, 2]
-
-    % Rows = [1, 0, 2, 2],
-    % Columns = [1, 0, 2, 2],
+    %Rows = [1, 0, 2, 2],
+    %Columns = [1, 0, 2, 2],
 
     % Rows = [2, 0, 0, 2],
     % Columns = [2, 0, 0, 2],  >> Este dá erro :(
@@ -35,8 +22,11 @@ square(StartX, StartY, Lengths) :-
     % StartY = [Ay,By,Cy,Dy],
     % Lengths = [L1, L2, L3, L4],
 
-    % Rows = [3, 3, 3, 0, 1],
-    % Columns = [3, 3, 3, 0, 1],
+    %Rows = [3, 3, 3, 0, 1],
+    %Columns = [3, 3, 3, 0, 1],
+
+    Rows = [1, 1, 1, 1, 1, 1, 1, 1],
+    Columns = [1, 1, 1, 1, 1, 1, 1, 1],
 
     length(Rows, RowSize),
     get_size(RowSize, Size),
@@ -54,15 +44,12 @@ square(StartX, StartY, Lengths) :-
 
     disjoint2(NewRectangles, [margin(a,a,1,1)]),
     write('Disjoint'), nl,
-    line_constraints(NewStartX, NewStartY, NewStartY, NewLengths, NewLengths, 1, Rows, Cols),
-    %line_constraints(CoordenatesX, CoordinatesY, CoordinatesY, Lengths, Lengths, LineNo, [LineTotal|RestTotals], ColumnTotals):-
-    
+    line_constraints(NewStartX, NewLengths, 1, Rows),
     write('Rows'), nl,
-    %line_constraints(NewStartY, NewLengths, 1, Cols),
-    %write('Columns'), nl,
+    line_constraints(NewStartY, NewLengths, 1, Columns),
+    write('Columns'), nl,
 
-    %apply_row_restrictions(Number, Matrix, RowR),
-    %apply_column_restrictions(Number, Number, Matrix, ColumnR),
+    orderedSolution(NewStartX, NewStartY),
 
     append(NewStartX, NewStartY, V),
     write('Append'), nl,
@@ -75,6 +62,12 @@ square(StartX, StartY, Lengths) :-
     write(NewLengths), nl,
 
     print_solution(NewStartX, NewStartY, NewLengths, RowSize, _).
+
+
+orderedSolution([_], [_]).
+orderedSolution([X1,X2|X], [Y1,Y2|Y]):-
+    (X1 #= X2 #/\ Y1 #< Y2) #\/ X1 #< X2,
+    orderedSolution([X2|X],[Y2|Y]),!.
 
 
 
@@ -218,7 +211,7 @@ build_lists(Rectangles, StartX, StartY, Lengths, NewRectangles, NewStartX, NewSt
     Ax + L1 #=< (FixedSize+1),
     Ay + L1 #=< (FixedSize+1).
 build_lists(Rectangles, StartX, StartY, Lengths, ResultRectangles, ResultStartX, ResultStartY, ResultLengths, Size, FixedSize) :-
-    write('Build lists: '), write(Size), nl,
+    write(Size), nl,
     NewSize is Size - 1,
     % trace,
     build_lists(Rectangles, StartX, StartY, Lengths, NewRectangles, NewStartX, NewStartY, NewLengths, NewSize, FixedSize),
@@ -242,86 +235,19 @@ get_size(RowSize, Size) :-
     Size is ((RowSize + 1)//2) * ((RowSize + 1)//2).
 
 
-
 %line_constraints(Coordenates, Lengths, N)
-line_constraints(_, _, _, _, _, _, [], _).
-line_constraints(CoordenatesX, CoordinatesY, CoordinatesYCopy, Lengths, LengthsCopy, LineNo, [LineTotal|RestTotals], ColumnTotals):-
-    write('line constraints, LineNo='), write(LineNo), nl, 
-    check_line(CoordenatesX, CoordinatesY, CoordinatesY, Lengths, Lengths, LineNo, Counter, ColumnTotals),
-    LineNo2 is LineNo + 1,
-    Counter #= LineTotal,
-    line_constraints(CoordenatesX, CoordinatesY, CoordinatesY, Lengths, Lengths, LineNo2, RestTotals, ColumnTotals).
-
-check_line([], [], _, [], _, _, _, []).
-check_line([X|RestX], [Y|RestY], FullY, [L|RestL], FullL, LineNo, CounterRows, CounterColumns):-
-    write('Check line: X='), write(X), nl,
-    [CounterCol | CounterColRest] = CounterColumns, 
-    LineNo #>= X #/\  LineNo #< (X + L) #<=> B,
-    CounterRows #= Counter2 + (B*L),
-    %check_column(Y, FullY, FullL, CounterCol),
-    check_line(RestX, RestY, FullY, RestL, FullL, LineNo, Counter2, CounterColRest).
-
-
-check_column(Y, FullY, FullL, CounterCol) :-
-    aux_column(Y, FullY, FullL, Counter),
-    Counter #= CounterCol.
-
-
-aux_column(Y, [], [], Counter).
-aux_column(Y, [HFullY | TFullY], [HFullL | TFullL], Counter) :-
-    Y #= HFullY #<=> B,
-    Counter #= Counter2 + (B*HFullL),
-    aux_column(Y, TFullY, TFullL, Counter2).
-
-
-
-
-
-/*
-%line_constraints(Coordenates, Lengths, N)
-column_constraints(_, _, _, []).
-column_constraints(Coordenates, Lengths, LineNo, [LineTotal|RestTotals]):-
+line_constraints(_, _, _, []).
+line_constraints(Coordenates, Lengths, LineNo, [LineTotal|RestTotals]):-
     check_line(Coordenates, Lengths, LineNo, Counter),
     LineNo2 is LineNo + 1,
     Counter #= LineTotal,
-    column_constraints(Coordenates, Lengths, LineNo2, RestTotals).
+    line_constraints(Coordenates, Lengths, LineNo2, RestTotals).
 
 check_line([], [], _, 0).
-check_line([Y|RestY], [L|RestL], LineNo, Counter):-
-    LineNo #>= Y #/\  LineNo #<= (Y + L) #<=> B,
+check_line([X|RestX], [L|RestL], LineNo, Counter):-
+    LineNo #>= X #/\  LineNo #< (X + L) #<=> B,
     Counter #= Counter2 + (B*L),
-    check_line(RestY, RestL, LineNo, Counter2).
-    
-*/
-
-
-
-/*
-apply_row_restrictions(1, Result, RowR) :-
-    element(1, RowR, Elem),
-    nth1(1, Result, ResultRow),
-    sum(ResultRow, #=, Elem).
-
-apply_row_restrictions(Number, Result, RowR) :-
-    NewNumber is Number - 1,
-    apply_row_restrictions(NewNumber, Result, RowR),
-    element(Number, RowR, Elem),
-    nth1(Number, Result, ResultRow),
-    sum(ResultRow, #=, Elem).
-
-
-apply_column_restrictions(NumberRow, 1, Matrix, ColumnR) :-
-    element(1, ColumnR, Elem),
-    get_column_one(NumberRow, 1, Matrix, ResultColumn),
-    sum(ResultColumn, #=, Elem).
-    
-apply_column_restrictions(NumberRow, NumberColumn, Matrix, ColumnR) :-
-    NewNumberColumn is NumberColumn - 1,
-    apply_column_restrictions(NumberRow, NewNumberColumn, Matrix, ColumnR),
-    element(NumberColumn, ColumnR, Elem),
-    get_column_one(NumberRow, NumberColumn, Matrix, ResultColumn),
-    sum(ResultColumn, #=, Elem).
-*/
+    check_line(RestX,RestL, LineNo, Counter2).
 
 
 % X = [1,1,3,3]
