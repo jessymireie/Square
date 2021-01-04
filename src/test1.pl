@@ -66,9 +66,60 @@ apply_column_restrictions(NumberRow, NumberColumn, Matrix, ColumnR) :-
 */
 % --------------------------------------------------------
 
+generate_square_outline(Matrix, NewNumberRow, NewNumberColumn, Dist, 0, B).
+generate_square_outline(Matrix, NumberRow, NumberColumn, Dist, MaxDist, 1) :-
+    length(Matrix, MatrixSize),
+    NumberRow + Dist > MatrixSize.
+generate_square_outline(Matrix, NumberRow, NumberColumn, Dist, MaxDist, 1) :-
+    length(Matrix, MatrixSize),
+    NumberColumn + Dist > MatrixSize.
+generate_square_outline(Matrix, NumberRow, NumberColumn, Dist, MaxDist, 1) :-
+    %trace,
+    write('generate_outline: '), write(NumberRow), write('-'), write(NumberColumn), nl,
+    NewNumberRow is NumberRow + Dist,
+    NewNumberColumn is NumberColumn + Dist,
+    nth1(NumberRow, Matrix, Row1),
+    element(NewNumberColumn, Row1, Elem1),
+    nth1(NewNumberRow, Matrix, Row2),
+    element(NumberColumn, Row2, Elem2),
+    Elem1 #= 1 #/\ Elem2 #= 1 #<=> B,
+    NewDist is Dist + 1,
+    generate_square_outline(Matrix, NumberRow, NumberColumn, NewDist, MaxDist, B).
+generate_square_outline(Matrix, NumberRow, NumberColumn, Dist, MaxDist, 0) :-
+    NewMaxDist is Dist - 1,
+    NewNumberRow is NumberRow + 1,
+    NewNumberColumn is NumberColumn + 1,
+    nth1(NumberRow, Matrix, Row1),
+    element(NewNumberColumn, Row1, Elem1),
+    nth1(NewNumberRow, Matrix, Row2),
+    element(NumberColumn, Row2, Elem2),
+    nth1(NewNumberRow, Matrix, Row3), % Elem atual
+    element(NewNumberColumn, Row3, Elem3),
+    Elem1 #= 1 #/\ Elem2 #= 1 #/\ Elem3 #= 1 #<=> B,
+    generate_square_outline(Matrix, NewNumberRow, NewNumberColumn, 1, NewMaxDist, B).
 
 
 
+
+
+
+generate_square(Matrix, NumberRow, NumberColumn, 0).
+generate_square(Matrix, NumberRow, NumberColumn, 1) :-
+    length(Matrix, MatrixSize),
+    NumberRow > MatrixSize.
+generate_square(Matrix, NumberRow, NumberColumn, 1) :-
+    length(Matrix, MatrixSize),
+    NumberColumn > MatrixSize.
+generate_square(Matrix, NumberRow, NumberColumn, 1) :-
+    write('generate_square: '), write(NumberRow), write('-'), write(NumberColumn), nl,
+    length(Matrix, MatrixSize),
+    generate_square_outline(Matrix, NumberRow, NumberColumn, 1, MatrixSize, 1).
+
+
+
+
+
+/*
 fill_row(Matrix, NumberRow, NumberColumn, SquareSize, ColumnN) :-
     ColumnN > SquareSize.
 fill_row(Matrix, NumberRow, NumberColumn, SquareSize, ColumnN) :-
@@ -89,10 +140,12 @@ fill_square(Matrix, NumberRow, NumberColumn, SquareSize, RowN) :-
 
 generate_square(Matrix, NumberRow, NumberColumn, 0).
 generate_square(Matrix, NumberRow, NumberColumn, 1) :-
+    write('Generating square: '), write(NumberRow), write('-'), write(NumberColumn), nl,
     length(Matrix, MatrixSize),
     SquareSize #=< MatrixSize - NumberColumn,
     length(List, SquareSize),
     fill_square(Matrix, NumberRow, NumberColumn, SquareSize, 1).
+*/
     
 
 %generate_square(Matrix, NumberRow, NumberColumn, 0).
@@ -113,6 +166,8 @@ checks_position(Matrix, 1, NumberColumn) :- %Linha superior
     element(LeftNumberColumn, RowElem, ElemLeft),
     element(NumberColumn, RowElem, Elem),
     ElemLeft #= 0 #/\ Elem #= 1 #<=> B,
+
+    %nl, write(B), nl,
     generate_square(Matrix, 1, NumberColumn, B).
 
 checks_position(Matrix, NumberRow, 1) :- %Coluna à esquerda
@@ -121,6 +176,7 @@ checks_position(Matrix, NumberRow, 1) :- %Coluna à esquerda
     element(1, RowElemUp, ElemUp),
     nth1(NumberRow, Matrix, RowElem),
     element(1, RowElem, Elem),
+    nl, write(NumberRow), write(': '), write(ElemUp), write('-'), write(Elem), nl,
     ElemUp #= 0 #/\ Elem #= 1 #<=> B,
     generate_square(Matrix, NumberRow, 1, B).
 
@@ -162,6 +218,7 @@ square_rows(Matrix, NumberRow, NumberColumn) :-
     square_rows(Matrix, NewNumberRow, NumberColumn).
 
 
+
 squares(Matrix) :- %NumberRow a começar por cima (1 -> N)
     %Só mais uma dúvida, a ideia seria então "percorrer" toda a matriz a tentar gerar cantos e, por sua vez, quadrados, 
     %tentando que isso encaixasse com as restrições das linhas/colunas colocadas anteriormente. 
@@ -175,6 +232,7 @@ squares(Matrix) :- %NumberRow a começar por cima (1 -> N)
     %Continuar a percorrer a matriz
 
     square_rows(Matrix, 1, 1).
+
     
 
 labeling_all(1, Matrix) :-
@@ -231,7 +289,7 @@ start_test :-
     %get_row(List, [1,1]-[1,3], RowResult),
     %trace,
     %get_column(List, [1,1]-[3,1], ColumnResult),
-    % squares(List),
+    squares(List),
     % nl, nl,
     %write(RowResult),
     % write(List),
